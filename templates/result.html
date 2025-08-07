@@ -5,54 +5,245 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Drowning Detection Result</title>
     <style>
+        :root {
+            --deep-blue: #0a5a8c;
+            --ocean-blue: #4aa8d8;
+            --wave-blue: #6fc1e8;
+            --alert-red: #ff4d4d;
+            --safety-orange: #ff7b25;
+            --light-foam: #f8f9fa;
+            --dark-text: #2b2d42;
+            --bubble: rgba(255, 255, 255, 0.7);
+            --normal-green: #5cb85c;
+            --abnormal-red: #d9534f;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 0 auto;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--dark-text);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            background: linear-gradient(to bottom, #e0f2ff, #b8e1ff);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             padding: 20px;
         }
+
+        .wave-top {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100px;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .wave {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 200%;
+            height: 100%;
+            background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1200 120" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"><path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" fill="%234aa8d8" opacity="0.6"/></svg>');
+            background-repeat: repeat-x;
+            background-size: 50% 100px;
+            animation: waveMove 15s linear infinite;
+        }
+
+        @keyframes waveMove {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        .bubble-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 200px;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .bubble {
+            position: absolute;
+            background-color: var(--bubble);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: -1;
+            animation: float linear forwards;
+            filter: blur(1px);
+            bottom: 0;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0) rotate(0deg) scale(0.8);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(-200px) rotate(180deg) scale(1.2);
+                opacity: 0;
+            }
+        }
+        
+        .content-wrapper {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex-grow: 1;
+            margin: 120px 0 150px;
+        }
+        
+        h1 {
+            color: var(--deep-blue);
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+            padding-bottom: 15px;
+            font-weight: 700;
+            font-size: 2.2rem;
+        }
+        
+        h1::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 25%;
+            right: 25%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent 0%, var(--ocean-blue) 50%, transparent 100%);
+            border-radius: 3px;
+        }
+        
         .result-card {
-            border: 1px solid #ddd;
-            padding: 20px;
-            margin-bottom: 20px;
-            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            margin-bottom: 25px;
+            text-align: center;
         }
+        
         .normal {
-            background-color: #dff0d8;
-            border-color: #d6e9c6;
+            border-left: 6px solid var(--normal-green);
         }
+        
         .abnormal {
-            background-color: #f2dede;
-            border-color: #ebccd1;
+            border-left: 6px solid var(--abnormal-red);
         }
+        
+        .result-card h2 {
+            margin-bottom: 15px;
+            color: var(--deep-blue);
+        }
+        
         .probability {
-            margin-top: 15px;
+            margin-top: 25px;
+            width: 100%;
+            max-width: 600px;
         }
+        
         .probability-item {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 5px;
+            margin-bottom: 10px;
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 8px;
         }
+        
         .probability-bar {
             height: 20px;
-            background-color: #f5f5f5;
-            margin-bottom: 15px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow: hidden;
         }
+        
         .probability-fill {
             height: 100%;
-            background-color: #5bc0de;
+            background: linear-gradient(90deg, var(--ocean-blue), var(--deep-blue));
             transition: width 0.5s ease;
+            border-radius: 10px;
         }
+        
         .btn-back {
-            display: inline-block;
-            background-color: #337ab7;
+            background: linear-gradient(135deg, var(--ocean-blue) 0%, var(--deep-blue) 100%);
             color: white;
-            padding: 8px 12px;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
             text-decoration: none;
-            border-radius: 4px;
+            transition: all 0.3s ease;
+            margin-top: 20px;
         }
+        
         .btn-back:hover {
-            background-color: #286090;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(10, 90, 140, 0.2);
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .wave-top {
+                height: 80px;
+            }
+            
+            .wave {
+                background-size: 50% 80px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 1.6rem;
+                margin-bottom: 20px;
+            }
+            
+            .content-wrapper {
+                margin: 100px 0 120px;
+            }
+            
+            .wave-top {
+                height: 60px;
+            }
+            
+            .wave {
+                background-size: 50% 60px;
+            }
+            
+            .bubble-container {
+                height: 150px;
+            }
         }
     </style>
 </head>
